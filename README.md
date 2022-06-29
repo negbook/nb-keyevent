@@ -1,4 +1,5 @@
 # nb-keyevent
+Register Key Events helper
 
 ## fxmanifest.lua
 ```
