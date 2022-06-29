@@ -28,7 +28,7 @@ CreateThread(function()
         end) -- keywordtype,cb
         on("pressing",function() -- other types of keywords would be on holding
             print("onpressing i 123")
-        end,250,500) -- type,cb,duration,delay,isdynamic(isdynamic would take duration become faster and faster when you keep pressing)
+        end,250,500,true) -- type,cb,duration,delay,isdynamic(isdynamic would take duration become faster and faster when you keep pressing)
     end)
 
     KeyEvent("MOUSE_BUTTON","MOUSE_LEFT",function(on)
