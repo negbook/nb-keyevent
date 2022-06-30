@@ -294,6 +294,7 @@ local Flags = {
     [2] = "OnRelease",
     [3] = "OnHold"
 }
+local KeyGroupObjects = {}
 
 local newkeyobject = function(groupid)
     local onfns = {
@@ -476,7 +477,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
         end
         
     end 
-    
+    KeyGroupObjects[groupid] = self
     return self
 end
 
@@ -485,7 +486,8 @@ local unpack = table.unpack
 
 KeyEvent = function(keygroup, key, cb)
     local desc = keygroup:lower()..":"..key:lower()
-    local key = BeginKeyBindMethod(keygroup,key,desc)
+    local groupid = keygroup.."_"..key
+    local key = KeyGroupObjects[groupid] or BeginKeyBindMethod(keygroup,key,desc)
     local inputs = {}
     local inserter = function(type,...) 
         if not inputs[type] then inputs[type] = {} end
