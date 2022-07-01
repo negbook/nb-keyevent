@@ -4,16 +4,29 @@ if GetCurrentResourceName() == "nb-keyevent" then
     local local_fns = function(name)
         local t = RegisteredEvents[name]
          return function()
-            for resource,_ in pairs(t) do 
-                TriggerEvent("NBRegCMDToResources:"..resource,name)
+            for resource,idxs in pairs(t) do 
+                if idxs then 
+                    for i,v in pairs(idxs) do 
+                        if v then 
+                            TriggerEvent("NBRegCMDToResources:"..resource,name,v)
+                        end 
+                    end 
+                end 
             end 
          end 
     end 
-    AddEventHandler("NBRegCMDToResources:nb-keyevent",function(name)
+    AddEventHandler("NBRegCMDToResources:nb-keyevent",function(name,idx)
         local resource = GetInvokingResource()
         if not RegisteredEvents[name] then RegisteredEvents[name] = {} end 
-        RegisteredEvents[name][resource] = true 
+        if not RegisteredEvents[name][resource] then RegisteredEvents[name][resource] = {} end 
+        RegisteredEvents[name][resource][idx] = idx 
         RegisterCommand(name,local_fns(name),false)
+    end) 
+    AddEventHandler("NBRegCMDToResourcesUndo:nb-keyevent",function(name,idx)
+        local resource = GetInvokingResource()
+        if not RegisteredEvents[name] then return end 
+        if not RegisteredEvents[name][resource] then return end 
+        RegisteredEvents[name][resource][idx] = nil 
     end) 
     NBRegisterKeyMapping = function(...)
         return RegisterKeyMapping(...)
@@ -21,12 +34,23 @@ if GetCurrentResourceName() == "nb-keyevent" then
     exports("NBRegisterKeyMapping",NBRegisterKeyMapping)
 else 
 local RegisterEvents = {}
-AddEventHandler("NBRegCMDToResources:"..GetCurrentResourceName(),function(cbname)
-    if RegisterEvents[cbname] then RegisterEvents[cbname]() end 
+local idx = 1
+AddEventHandler("NBRegCMDToResources:"..GetCurrentResourceName(),function(cbname,idx)
+    if RegisterEvents[cbname][idx] then RegisterEvents[cbname][idx]() end 
 end) 
 NBRegisterCommand = function(name,fn)
-    RegisterEvents[name] = fn 
-    TriggerEvent("NBRegCMDToResources:nb-keyevent",name)
+    local handle = {name,idx}
+    if not RegisterEvents[name] then RegisterEvents[name] = {} 
+        TriggerEvent("NBRegCMDToResources:nb-keyevent",name,idx)
+        RegisterEvents[name][idx] = fn
+        idx = idx + 1
+    end 
+    
+    return handle
+end 
+NBUnRegisterCommand = function(handle)
+    RegisterEvents[handle[1]][handle[2]] = nil
+    TriggerEvent("NBRegCMDToResourcesUndo:nb-keyevent",handle[1],handle[2])
 end 
 NBRegisterKeyMapping = function(...)
     return exports["nb-keyevent"]:NBRegisterKeyMapping(...)
@@ -379,7 +403,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
         local action = nil
         if string.find(regtype:lower(),"justpress") then 
             action = Flags[1]
-        elseif string.find(regtype:lower(),"justreleased") then
+        elseif string.find(regtype:lower(),"release") then
             action = Flags[2]
         elseif string.len(regtype) > 0 then
             action = Flags[3]
@@ -432,7 +456,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
         local action = nil
         if string.find(regtype:lower(),"justpress") then 
             action = Flags[1]
-        elseif string.find(regtype:lower(),"justreleased") then
+        elseif string.find(regtype:lower(),"release") then
             action = Flags[2]
         elseif string.len(regtype) > 0 then
             action = Flags[3]
@@ -449,7 +473,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
     self.bindend = function()
         local fns = obj("getonfns")
         local reg = function(name,action)
-            NBRegisterCommand(name, function()
+            return NBRegisterCommand(name, function()
                 local tempaction = action
                 if fns and fns[tempaction] then 
                   for i=1,#fns[tempaction] do 
@@ -465,17 +489,18 @@ local BeginKeyBindMethod = function(keygroup,key,description)
                 end 
             end, false)
         end 
+        local result1,result2
         if (fns[Flags[2]] or e)[1] or (fns[Flags[3]] or e)[1] then
             local name = "+" .. groupid
-            reg(name,Flags[1])
+            result1 = reg(name,Flags[1])
             NBRegisterKeyMapping(name, description or '', keygroup, key)
-            reg(name:gsub("+","-"),Flags[2])
+            result2 = reg(name:gsub("+","-"),Flags[2])
         else 
             local name = groupid
-            reg(name,Flags[1])
+            result1 = reg(name,Flags[1])
             NBRegisterKeyMapping(name, description or '', keygroup, key)
         end
-        
+        return result1,result2
     end 
     KeyGroupObjects[groupid] = self
     return self
@@ -499,7 +524,9 @@ KeyEvent = function(keygroup, key, cb)
             key.bindadd(k,unpack(v[i]))
         end
     end
-    key.bindend()
+    return key.bindend()
 end
-
+RemoveKeyEvent = function(handle)
+    NBUnRegisterCommand(handle)
+end 
 end 

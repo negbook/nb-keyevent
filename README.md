@@ -23,7 +23,7 @@ CreateThread(function()
         on("justpressed",function() --the type keyword has 'justpress' would be on justpressed
             print("just pressed i 123")
         end) -- keywordtype,cb
-        on("justreleased",function() --the type keyword has 'justreleased' would be on justreleased
+        on("justreleased",function() --the type keyword has 'release' would be on justreleased
             print("just released i 123")
         end) -- keywordtype,cb
         on("pressing",function() -- other types of keywords would be on holding
@@ -35,7 +35,7 @@ CreateThread(function()
         on("justpressed",function()   --the type keyword has 'justpress' would be on justpressed
             print("just pressed MOUSE_BUTTON")
         end) -- keywordtype,cb
-        on("justreleased",function() --the type keyword has 'justreleased' would be on justreleased
+        on("justreleased",function() --the type keyword has 'release' would be on justreleased
             print("just released MOUSE_BUTTON")
         end) -- keywordtype,cb
         on("pressing",function()  -- other types of keywords would be on holding
