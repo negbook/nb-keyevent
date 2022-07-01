@@ -8,7 +8,7 @@ if GetCurrentResourceName() == "nb-keyevent" then
                 if idxs then 
                     for i,v in pairs(idxs) do 
                         if v then 
-                            TriggerEvent("NBRegCMDToResources:"..resource,name,v)
+                            TriggerEvent("NBRegCMDToResources:"..resource,name,i)
                         end 
                     end 
                 end 
@@ -19,14 +19,14 @@ if GetCurrentResourceName() == "nb-keyevent" then
         local resource = GetInvokingResource()
         if not RegisteredEvents[name] then RegisteredEvents[name] = {} end 
         if not RegisteredEvents[name][resource] then RegisteredEvents[name][resource] = {} end 
-        RegisteredEvents[name][resource][idx] = idx 
+        RegisteredEvents[name][resource][idx] = true 
         RegisterCommand(name,local_fns(name),false)
     end) 
     AddEventHandler("NBRegCMDToResourcesUndo:nb-keyevent",function(name,idx)
         local resource = GetInvokingResource()
         if not RegisteredEvents[name] then return end 
         if not RegisteredEvents[name][resource] then return end 
-        RegisteredEvents[name][resource][idx] = nil 
+        RegisteredEvents[name][resource][idx] = false 
     end) 
     NBRegisterKeyMapping = function(...)
         return RegisterKeyMapping(...)
@@ -40,12 +40,11 @@ AddEventHandler("NBRegCMDToResources:"..GetCurrentResourceName(),function(cbname
 end) 
 NBRegisterCommand = function(name,fn)
     local handle = {name,idx}
-    if not RegisterEvents[name] then RegisterEvents[name] = {} 
+    if not RegisterEvents[name] then RegisterEvents[name] = {}  end 
+    if not RegisterEvents[name][idx] then RegisterEvents[name][idx] = fn 
         TriggerEvent("NBRegCMDToResources:nb-keyevent",name,idx)
-        RegisterEvents[name][idx] = fn
         idx = idx + 1
     end 
-    
     return handle
 end 
 NBUnRegisterCommand = function(handle)
@@ -524,9 +523,12 @@ KeyEvent = function(keygroup, key, cb)
             key.bindadd(k,unpack(v[i]))
         end
     end
-    return key.bindend()
+    return {key.bindend()}
 end
 RemoveKeyEvent = function(handle)
-    NBUnRegisterCommand(handle)
+    for i=1,#handle do 
+        NBUnRegisterCommand(handle[i])
+    end 
+    
 end 
 end 
