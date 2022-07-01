@@ -45,4 +45,23 @@ CreateThread(function()
     
     
 end)
+CreateThread(function() --RemoveKeyEvent
+local handle1,handle2 = KeyEvent("keyboard","UP",function(on)
+    on("justpressed",function()
+        print('test')
+    end) 
+end)
+local handle3,handle4 = KeyEvent("keyboard","DOWN",function(on)
+    on("press",function()
+        print('down')
+    end,0,0) 
+    on("justreleased",function()
+        print('released down')
+    end) 
+end)
+
+RemoveKeyEvent(handle1)
+RemoveKeyEvent(handle3)
+print(json.encode(handle3),json.encode(handle4))
+end)
 ```
