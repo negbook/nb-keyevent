@@ -412,37 +412,40 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             checkduration = duration or checkduration
             checkdelay = delay or checkdelay
             isdynamic = dynamic or isdynamic
-            if not holdingloop then holdingloop = PepareLoopLocal(checkduration) end
-            
-            holdingloop(function(duration)
-                if holdingloop and isholding then
-                    local diff = GetGameTimer() - lastpressedtime 
-                    if ispressed and diff > checkdelay then 
-                        for i=1,#obj("getonfns")[Flags[3]] do
-                            obj("getonfns")[Flags[3]][i]()
-                        end
-                        if isdynamic then
-                            if dynamiclevel < 5 then
-                                if diff > checkdelay * dynamiclevel then
-                                    dynamiclevel = dynamiclevel + 1
-                                end
+            if not holdingloop then holdingloop = PepareLoopLocal(checkduration) 
+                holdingloop(function(duration)
+                    
+                    if holdingloop and isholding then
+                        local diff = GetGameTimer() - lastpressedtime 
+                        if ispressed and diff > checkdelay then 
+                            local onpressingtasks = obj("getonfns")[Flags[3]]
+                            local n = #onpressingtasks
+                            if n == 0 then duration("kill") end 
+                            for i=1,n do
+                                onpressingtasks[i]()
                             end
-                            duration("set",checkduration/dynamiclevel)
-                        end
-                    end 
-                else 
-                    isholding = false 
-                    checkduration = 50
-                    checkdelay = 250
-                    dynamiclevel = 1
-                    if holdingloop then 
-                        holdingloop:delete()
-                        holdingloop = nil
-                    end 
+                            if isdynamic then
+                                if dynamiclevel < 5 then
+                                    if diff > checkdelay * dynamiclevel then
+                                        dynamiclevel = dynamiclevel + 1
+                                    end
+                                end
+                                duration("set",checkduration/dynamiclevel)
+                            end
+                        end 
+                    else 
+                        isholding = false 
+                        checkduration = 50
+                        checkdelay = 250
+                        dynamiclevel = 1
+                        if holdingloop then 
+                            holdingloop:delete()
+                            holdingloop = nil
+                        end 
 
-                end
-            end)
-            
+                    end
+                end)
+            end
         end 
         if action == Flags[1] then
             self.addonjustpressed(func)
@@ -452,7 +455,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             self.addonhold(func)
         end
         table.insert(self.handles,{action,func})
-
+        return {action,func}
     end
     self.bindremove = function(regtype,func)
         local action = nil
@@ -462,7 +465,9 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             action = Flags[2]
         elseif string.len(regtype) > 0 then
             action = Flags[3]
-            if isholding then isholding = false end
+            if #obj("getonfns")[Flags[3]] == 0 then 
+                if isholding then isholding = false end
+            end 
         end 
         if action == Flags[1] then
             self.removeonjustpressed(func)
@@ -471,12 +476,18 @@ local BeginKeyBindMethod = function(keygroup,key,description)
         elseif action == Flags[3] then
             self.removeonhold(func)
         end
+        
     end
     self.handles = {}
     self.bindremoveall = function()
         for i,v in pairs(self.handles) do 
             self.bindremove(table.unpack(v))
         end 
+    end 
+    self.bindremovespec = function(data)
+        local action = data[1]
+        local func = data[2]
+        self.bindremove(action,func)
     end 
     self.bindend = function()
         local fns = obj("getonfns")
@@ -513,7 +524,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             result1 = reg(name,Flags[1])
             NBRegisterKeyMapping(name, description or '', keygroup, key)
         end
-        
+        --for cmd handle 
         return result1,result2
     end 
     KeyGroupObjects[groupid] = self
@@ -528,6 +539,7 @@ KeyEvent = function(keygroup, key, cb)
     local groupid = keygroup.."_"..key
     local key = KeyGroupObjects[groupid] or BeginKeyBindMethod(keygroup,key,desc)
     local inputs = {}
+    local actions = {}
     local inserter = function(type,...) 
         if not inputs[type] then inputs[type] = {} end
         table.insert(inputs[type],{...})
@@ -536,17 +548,22 @@ KeyEvent = function(keygroup, key, cb)
     for k,v in pairs(inputs) do
         for i=1,#v do
             key.bindadd(k,unpack(v[i]))
+            table.insert(actions,{k,v[i][1]})
         end
     end
     
-    return {keyhandle = key,commandhandle = {key.bindend()}}
+    return {keyhandle = key,commandhandle = {key.bindend()},actionhandle = actions}
 end
 RemoveKeyEvent = function(datahandle)
     local keyhandle = datahandle.keyhandle
     local commandhandle = datahandle.commandhandle
+    local actionhandle = datahandle.actionhandle
     for i=1,#commandhandle do 
         NBUnRegisterCommand(commandhandle[i])
     end 
-    keyhandle.bindremoveall()
+    for i=1,#actionhandle do 
+        keyhandle.bindremovespec(actionhandle[i])
+    end 
+    
 end 
 end 
