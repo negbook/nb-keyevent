@@ -40,7 +40,7 @@ AddEventHandler("NBRegCMDToResources:"..GetCurrentResourceName(),function(cbname
 end) 
 NBRegisterCommand = function(name,fn)
     local handle = {name,idx}
-    if not RegisterEvents[name] then RegisterEvents[name] = {}  end 
+    if not RegisterEvents[name] then RegisterEvents[name] = {}   end 
     if not RegisterEvents[name][idx] then RegisterEvents[name][idx] = fn 
         TriggerEvent("NBRegCMDToResources:nb-keyevent",name,idx)
         idx = idx + 1
@@ -313,9 +313,9 @@ local PepareLoopLocal = _M_.PepareLoop
 
 local e = {} setmetatable(e,{__call = function(self) return end})
 local Flags = {
-    [1] = "OnPress",
-    [2] = "OnRelease",
-    [3] = "OnHold"
+    [1] = "OnJustPressed",
+    [2] = "OnJustReleased",
+    [3] = "OnPressing"
 }
 local KeyGroupObjects = {}
 
@@ -334,6 +334,7 @@ local newkeyobject = function(groupid)
             table.insert(onfns[Flags[2]],func)
         elseif action == "removeonjustpressfunc" then
             for i=1,#onfns[Flags[1]] do
+                
                 if onfns[Flags[1]][i] == func then
                     table.remove(onfns[Flags[1]],i)
                     break
@@ -450,6 +451,8 @@ local BeginKeyBindMethod = function(keygroup,key,description)
         elseif action == Flags[3] then
             self.addonhold(func)
         end
+        table.insert(self.handles,{action,func})
+
     end
     self.bindremove = function(regtype,func)
         local action = nil
@@ -469,8 +472,15 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             self.removeonhold(func)
         end
     end
+    self.handles = {}
+    self.bindremoveall = function()
+        for i,v in pairs(self.handles) do 
+            self.bindremove(table.unpack(v))
+        end 
+    end 
     self.bindend = function()
         local fns = obj("getonfns")
+
         local reg = function(name,action)
             return NBRegisterCommand(name, function()
                 local tempaction = action
@@ -486,7 +496,11 @@ local BeginKeyBindMethod = function(keygroup,key,description)
                     ispressed = false
                     lastpressedtime = 0 
                 end 
-            end, false)
+            end, false, function()
+                for i,v in pairs(fns) do 
+                    self.bindremove(i,v)
+                end 
+            end)
         end 
         local result1,result2
         if (fns[Flags[2]] or e)[1] or (fns[Flags[3]] or e)[1] then
@@ -499,6 +513,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             result1 = reg(name,Flags[1])
             NBRegisterKeyMapping(name, description or '', keygroup, key)
         end
+        
         return result1,result2
     end 
     KeyGroupObjects[groupid] = self
@@ -523,12 +538,15 @@ KeyEvent = function(keygroup, key, cb)
             key.bindadd(k,unpack(v[i]))
         end
     end
-    return {key.bindend()}
-end
-RemoveKeyEvent = function(handle)
-    for i=1,#handle do 
-        NBUnRegisterCommand(handle[i])
-    end 
     
+    return {keyhandle = key,commandhandle = {key.bindend()}}
+end
+RemoveKeyEvent = function(datahandle)
+    local keyhandle = datahandle.keyhandle
+    local commandhandle = datahandle.commandhandle
+    for i=1,#commandhandle do 
+        NBUnRegisterCommand(commandhandle[i])
+    end 
+    keyhandle.bindremoveall()
 end 
 end 
