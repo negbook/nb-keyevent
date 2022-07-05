@@ -309,7 +309,12 @@ Tasksync.PepareLoop = function(duration,releasecb)
 end
 end 
 
-local PepareLoopLocal = PepareLoop or _M_.PepareLoop
+
+local PepareLoop = PepareLoop
+if not PepareLoop then 
+    local try = LoadResourceFile("nb-libs","shared/loop.lua") or LoadResourceFile("nb-loop","nb-loop.lua")
+    PepareLoop = PepareLoop or load(try.." return PepareLoop(...)") or _M_.PepareLoop
+end 
 
 local e = {} setmetatable(e,{__call = function(self) return end})
 local Flags = {
@@ -412,7 +417,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             checkduration = duration or checkduration
             checkdelay = delay or checkdelay
             isdynamic = dynamic or isdynamic
-            if not holdingloop then holdingloop = PepareLoopLocal(checkduration) 
+            if not holdingloop then holdingloop = PepareLoop(checkduration) 
                 holdingloop(function(duration)
                     
                     if holdingloop and isholding then
