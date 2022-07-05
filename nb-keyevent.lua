@@ -309,7 +309,7 @@ Tasksync.PepareLoop = function(duration,releasecb)
 end
 end 
 
-local PepareLoopLocal = _M_.PepareLoop
+local PepareLoopLocal = PepareLoop or _M_.PepareLoop
 
 local e = {} setmetatable(e,{__call = function(self) return end})
 local Flags = {
