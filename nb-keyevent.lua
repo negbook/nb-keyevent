@@ -1,59 +1,4 @@
 --Credit: negbook
-if GetCurrentResourceName() == "nb-keyevent" then 
-    local RegisteredEvents = {}
-    local local_fns = function(name)
-        local t = RegisteredEvents[name]
-         return function()
-            for resource,idxs in pairs(t) do 
-                if idxs then 
-                    for i,v in pairs(idxs) do 
-                        if v then 
-                            TriggerEvent("NBRegCMDToResources:"..resource,name,i)
-                        end 
-                    end 
-                end 
-            end 
-         end 
-    end 
-    AddEventHandler("NBRegCMDToResources:nb-keyevent",function(name,idx)
-        local resource = GetInvokingResource()
-        if not RegisteredEvents[name] then RegisteredEvents[name] = {} end 
-        if not RegisteredEvents[name][resource] then RegisteredEvents[name][resource] = {} end 
-        RegisteredEvents[name][resource][idx] = true 
-        RegisterCommand(name,local_fns(name),false)
-    end) 
-    AddEventHandler("NBRegCMDToResourcesUndo:nb-keyevent",function(name,idx)
-        local resource = GetInvokingResource()
-        if not RegisteredEvents[name] then return end 
-        if not RegisteredEvents[name][resource] then return end 
-        RegisteredEvents[name][resource][idx] = false 
-    end) 
-    NBRegisterKeyMapping = function(...)
-        return RegisterKeyMapping(...)
-    end 
-    exports("NBRegisterKeyMapping",NBRegisterKeyMapping)
-else 
-local RegisterEvents = {}
-local idx = 1
-AddEventHandler("NBRegCMDToResources:"..GetCurrentResourceName(),function(cbname,idx)
-    if RegisterEvents[cbname][idx] then RegisterEvents[cbname][idx]() end 
-end) 
-NBRegisterCommand = function(name,fn)
-    local handle = {name,idx}
-    if not RegisterEvents[name] then RegisterEvents[name] = {}   end 
-    if not RegisterEvents[name][idx] then RegisterEvents[name][idx] = fn 
-        TriggerEvent("NBRegCMDToResources:nb-keyevent",name,idx)
-        idx = idx + 1
-    end 
-    return handle
-end 
-NBUnRegisterCommand = function(handle)
-    RegisterEvents[handle[1]][handle[2]] = nil
-    TriggerEvent("NBRegCMDToResourcesUndo:nb-keyevent",handle[1],handle[2])
-end 
-NBRegisterKeyMapping = function(...)
-    return exports["nb-keyevent"]:NBRegisterKeyMapping(...)
-end 
 
 local _M_ = {}
 do 
@@ -310,11 +255,106 @@ end
 end 
 
 
-local PepareLoop = PepareLoop
+PepareLoop = PepareLoop
 if not PepareLoop then 
     local try = LoadResourceFile("nb-libs","shared/loop.lua") or LoadResourceFile("nb-loop","nb-loop.lua")
     PepareLoop = PepareLoop or (try and load(try.." return PepareLoop(...)")) or _M_.PepareLoop
 end 
+
+
+if GetCurrentResourceName() == "nb-keyevent" then 
+    local RegisteredEvents = {}
+    local local_fns = function(name)
+        local t = RegisteredEvents[name]
+         return function()
+            for resource,idxs in pairs(t) do 
+                if idxs then 
+                    for i,v in pairs(idxs) do 
+                        if v then 
+                            TriggerEvent("NBRegCMDToResources:"..resource,name,i)
+                        end 
+                    end 
+                end 
+            end 
+         end 
+    end 
+    AddEventHandler("NBRegCMDToResources:nb-keyevent",function(name,idx)
+        local resource = GetInvokingResource()
+        if not RegisteredEvents[name] then RegisteredEvents[name] = {} end 
+        if not RegisteredEvents[name][resource] then RegisteredEvents[name][resource] = {} end 
+        RegisteredEvents[name][resource][idx] = true 
+        RegisterCommand(name,local_fns(name),false)
+    end) 
+    AddEventHandler("NBRegCMDToResourcesUndo:nb-keyevent",function(name,idx)
+        local resource = GetInvokingResource()
+        if not RegisteredEvents[name] then return end 
+        if not RegisteredEvents[name][resource] then return end 
+        RegisteredEvents[name][resource][idx] = false 
+    end) 
+    NBRegisterKeyMapping = function(name,desc,group,key ) --name,desc,group,key 
+        local game = GetGameName()
+        if game == "redm" or type(group) == "number" then 
+            if type(key) == "string" then 
+                local Keys = {
+                    ["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57, 
+                    ["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177, 
+                    ["TAB"] = 37, ["Q"] = 44, ["W"] = 32, ["E"] = 38, ["R"] = 45, ["T"] = 245, ["Y"] = 246, ["U"] = 303, ["P"] = 199, ["["] = 39, ["]"] = 40, ["ENTER"] = 18,
+                    ["CAPS"] = 137, ["A"] = 34, ["S"] = 8, ["D"] = 9, ["F"] = 23, ["G"] = 47, ["H"] = 74, ["K"] = 311, ["L"] = 182,
+                    ["LEFTSHIFT"] = 21, ["Z"] = 20, ["X"] = 73, ["C"] = 26, ["V"] = 0, ["B"] = 29, ["N"] = 249, ["M"] = 244, [","] = 82, ["."] = 81,
+                    ["LEFTCTRL"] = 36, ["LEFTALT"] = 19, ["SPACE"] = 22, ["RIGHTCTRL"] = 70, 
+                    ["HOME"] = 213, ["PAGEUP"] = 10, ["PAGEDOWN"] = 11, ["DELETE"] = 178,
+                    ["LEFT"] = 174, ["RIGHT"] = 175, ["TOP"] = 27, ["DOWN"] = 173,
+                    ["NENTER"] = 201, ["N4"] = 108, ["N5"] = 60, ["N6"] = 107, ["N+"] = 96, ["N-"] = 97, ["N7"] = 117, ["N8"] = 61, ["N9"] = 118
+                }
+                key = Keys[string.upper(key)]
+            end 
+            RegisterKeyMapping = function(name,desc,group,key)
+                if type(group) == "number" and type(key) == "number" then 
+                if not KeyCheckLoop then KeyCheckLoop = PepareLoop(0) end 
+                KeyCheckLoop(function()
+                    if string.sub(name,1,1) == "+" then 
+                        if IsControlJustPressed(group,key) then 
+                            local_fns(name)()
+                        end
+                        if IsControlJustReleased(group,key) then 
+                            local_fns("-"..string.sub(name,2))()
+                        end
+                    else 
+                        if IsControlJustPressed(group,key) then 
+                            local_fns(name)()
+                        end
+                    end
+                end)
+                end
+            end 
+        end 
+        return RegisterKeyMapping(name,desc,group,key )
+        
+    end 
+    exports("NBRegisterKeyMapping",NBRegisterKeyMapping)
+else 
+local RegisterEvents = {}
+local idx = 1
+AddEventHandler("NBRegCMDToResources:"..GetCurrentResourceName(),function(cbname,idx)
+    if RegisterEvents[cbname][idx] then RegisterEvents[cbname][idx]() end 
+end) 
+NBRegisterCommand = function(name,fn)
+    local handle = {name,idx}
+    if not RegisterEvents[name] then RegisterEvents[name] = {}   end 
+    if not RegisterEvents[name][idx] then RegisterEvents[name][idx] = fn 
+        TriggerEvent("NBRegCMDToResources:nb-keyevent",name,idx)
+        idx = idx + 1
+    end 
+    return handle
+end 
+NBUnRegisterCommand = function(handle)
+    RegisterEvents[handle[1]][handle[2]] = nil
+    TriggerEvent("NBRegCMDToResourcesUndo:nb-keyevent",handle[1],handle[2])
+end 
+NBRegisterKeyMapping = function(...)
+    return exports["nb-keyevent"]:NBRegisterKeyMapping(...)
+end 
+
 
 local e = {} setmetatable(e,{__call = function(self) return end})
 local Flags = {
@@ -540,7 +580,7 @@ end
 local unpack = table.unpack 
 
 KeyEvent = function(keygroup, key, cb)
-    local desc = keygroup:lower()..":"..key:lower()
+    local desc = tostring(keygroup):lower()..":"..tostring(key):lower()
     local groupid = keygroup.."_"..key
     local key = KeyGroupObjects[groupid] or BeginKeyBindMethod(keygroup,key,desc)
     local inputs = {}
