@@ -952,7 +952,7 @@ KeyEvent = function(keygroup, key, cb)
     
     local desc = tostring(keygroup):lower()..":"..tostring(key):lower()
     local groupid = keygroup.."_"..key
-    print(groupid)
+    
     local key = KeyGroupObjects[groupid] or BeginKeyBindMethod(keygroup,key,desc)
     local inputs = {}
     local actions = {}
