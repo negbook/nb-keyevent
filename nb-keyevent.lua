@@ -291,6 +291,20 @@ if GetCurrentResourceName() == "nb-keyevent" then
         if not RegisteredEvents[name][resource] then return end 
         RegisteredEvents[name][resource][idx] = false 
     end) 
+    AddEventHandler("OnResourceStop",function(resource)
+        if not RegisteredEvents then return end 
+        for name,idxs in pairs(RegisteredEvents) do 
+            if idxs then 
+                if idxs[resource] then 
+                    for i,v in pairs(idxs[resource]) do 
+                        if v then 
+                            TriggerEvent("NBRegCMDToResourcesUndo:"..resource,name,i)
+                        end 
+                    end 
+                end 
+            end 
+        end 
+    end)
     NBRegisterKeyMapping = function(name,desc,group,key ) --name,desc,group,key 
         local game = GetGameName()
         if game == "redm" or type(group) == "number" then 
