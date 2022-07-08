@@ -305,6 +305,7 @@ if GetCurrentResourceName() == "nb-keyevent" then
             end 
         end 
     end)
+    local reads = {}
     NBRegisterKeyMapping = function(name,desc,group,key ) --name,desc,group,key 
         local game = GetGameName()
         if game == "redm" or type(group) == "number" then 
@@ -482,12 +483,13 @@ if GetCurrentResourceName() == "nb-keyevent" then
                 table.insert(hashes,`INPUT_SELECT_CHARACTER_MULTIPLAYER`)
                 table.insert(hashes,`INPUT_SAVE_REPLAY_CLIP`)
                 table.insert(hashes,`INPUT_SPECIAL_ABILITY_PC`)
-                table.insert(hashes,`INPUT_CELLPHONE_UP`)
-                table.insert(hashes,`INPUT_CELLPHONE_DOWN`)
-                table.insert(hashes,`INPUT_CELLPHONE_LEFT`)
-                table.insert(hashes,`INPUT_CELLPHONE_RIGHT`)
-                table.insert(hashes,`INPUT_CELLPHONE_SELECT`)
-                table.insert(hashes,`INPUT_CELLPHONE_CANCEL`)
+                local isRDR = game == "redm"
+                table.insert(hashes,isRDR and 0x911CB09E or `INPUT_CELLPHONE_UP`)
+                table.insert(hashes,isRDR and 0x4403F97F or `INPUT_CELLPHONE_DOWN`)
+                table.insert(hashes,isRDR and 0xAD7FCC5B or `INPUT_CELLPHONE_LEFT`)
+                table.insert(hashes,isRDR and 0x65F9EC5B or `INPUT_CELLPHONE_RIGHT`)
+                table.insert(hashes,isRDR and 0xC7B5340A or `INPUT_CELLPHONE_SELECT`)
+                table.insert(hashes,isRDR and 0x308588E6 or `INPUT_CELLPHONE_CANCEL`)
                 table.insert(hashes,`INPUT_CELLPHONE_OPTION`)
                 table.insert(hashes,`INPUT_CELLPHONE_EXTRA_OPTION`)
                 table.insert(hashes,`INPUT_CELLPHONE_SCROLL_FORWARD`)
@@ -671,9 +673,15 @@ if GetCurrentResourceName() == "nb-keyevent" then
                 table.insert(hashes,`INPUT_QUAD_LOCO_REVERSE`)
                 table.insert(hashes,`INPUT_RESPAWN_FASTER`)
                 table.insert(hashes,`INPUT_HUDMARKER_SELECT`)
-                local Keys = { ["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57, ["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177, ["TAB"] = 37, ["Q"] = 44, ["W"] = 32, ["E"] = 38, ["R"] = 45, ["T"] = 245, ["Y"] = 246, ["U"] = 303, ["P"] = 199, ["["] = 39, ["]"] = 40, ["ENTER"] = 18, ["CAPS"] = 137, ["A"] = 34, ["S"] = 8, ["D"] = 9, ["F"] = 23, ["G"] = 47, ["H"] = 74, ["K"] = 311, ["L"] = 182, ["LSHIFT"] = 21, ["Z"] = 20, ["X"] = 73, ["C"] = 26, ["V"] = 0, ["B"] = 29, ["N"] = 249, ["M"] = 244, [","] = 82, ["."] = 81, ["LCONTROL"] = 36, ["LEFTALT"] = 19, ["SPACE"] = 22, ["RCONTROL"] = 70, ["HOME"] = 213, ["PAGEUP"] = 10, ["PAGEDOWN"] = 11, ["DELETE"] = 178, ["LEFT"] = 174, ["RIGHT"] = 175, ["TOP"] = 27, ["DOWN"] = 173, ["NENTER"] = 201, ["NUMPAD4"] = 108, ["NUMPAD5"] = 60, ["NUMPAD6"] = 107, ["ADD"] = 96, ["SUBTRACT"] = 97, ["NUMPAD7"] = 117, ["NUMPAD8"] = 61, ["NUMPAD9"] = 118 }
+                local Keys = { 
+                ["RDOWN_INDEX"] = 176, ["RRIGHT_INDEX"] = 177, ["RUP_INDEX"] = 178, ["RLEFT_INDEX"] = 179, 
+                ["LUP_INDEX"] = 172,["LDOWN_INDEX"] = 173,["LLEFT_INDEX"] = 174,["LRIGHT_INDEX"] = 175,["MOUSE_LEFT"] = 24, ["MOUSE_RIGHT"] = 25, ["IOM_WHEEL_UP"] = 15, ["IOM_WHEEL_DOWN"] = 16, 
+                ["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57, ["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACK"] = 177, ["TAB"] = 37, ["Q"] = 44, ["W"] = 32, ["E"] = 38, ["R"] = 45, ["T"] = 245, ["Y"] = 246, ["U"] = 303, ["P"] = 199, ["["] = 39, ["]"] = 40, ["RETURN"] = 176, ["CAPS"] = 137, ["A"] = 34, ["S"] = 8, ["D"] = 9, ["F"] = 23, ["G"] = 47, ["H"] = 74, ["K"] = 311, ["L"] = 182, ["LSHIFT"] = 21, ["Z"] = 20, ["X"] = 73, ["C"] = 26, ["V"] = 0, ["B"] = 29, ["N"] = 249, ["M"] = 244, [","] = 82, ["."] = 81, ["LCONTROL"] = 36, ["LEFTALT"] = 19, ["SPACE"] = 22, ["RCONTROL"] = 70, ["HOME"] = 213, ["PAGEUP"] = 10, ["PAGEDOWN"] = 11, ["DELETE"] = 178, ["LEFT"] = 174, ["RIGHT"] = 175, ["UP"] = 172, ["DOWN"] = 173, ["NENTER"] = 201, ["NUMPAD4"] = 108, ["NUMPAD5"] = 60, ["NUMPAD6"] = 107, ["ADD"] = 96, ["SUBTRACT"] = 97, ["NUMPAD7"] = 117, ["NUMPAD8"] = 61, ["NUMPAD9"] = 118 }
                 
-                key = hashes[Keys[string.upper(key)]+1]
+                local keyid = Keys[string.upper(key)]+1
+                if not reads[keyid] then reads[keyid] = true 
+                    key = hashes[Keys[string.upper(key)]+1]
+                end 
                 group = 0
             end 
             RegisterKeyMapping = function(name,desc,group,key)
@@ -682,14 +690,17 @@ if GetCurrentResourceName() == "nb-keyevent" then
                 KeyCheckLoop(function()
                     if string.sub(name,1,1) == "+" then 
                         if IsControlJustPressed(group,key) then 
+                            print('wtf',name)
                             local_fns(name)()
                         end
                         if IsControlJustReleased(group,key) then 
                             local_fns("-"..string.sub(name,2))()
+                            print('wtf',"-"..string.sub(name,2))
                         end
                     else 
                         if IsControlJustPressed(group,key) then 
                             local_fns(name)()
+                            print('wtf',name)
                         end
                     end
                 end)
