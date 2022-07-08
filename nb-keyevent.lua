@@ -78,7 +78,7 @@ do
         end 
     end 
 
-    local PepareLoop = function(duration,init)
+    local LoopParty = function(duration,init)
         if not Loops[duration] then Loops[duration] = {} end 
         local self = {}
         self.duration = duration
@@ -185,15 +185,15 @@ do
         self.set = self.transfer 
         return self
     end 
-    _M_.PepareLoop = PepareLoop
+    _M_.LoopParty = LoopParty
 end 
 
 
 
-local PepareLoop = PepareLoop
-if not PepareLoop then 
+local LoopParty = LoopParty
+if not LoopParty then 
     local try = LoadResourceFile("nb-libs","shared/loop.lua") or LoadResourceFile("nb-loop","nb-loop.lua")
-    PepareLoop = PepareLoop or (try and load(try.." return PepareLoop(...)")) or _M_.PepareLoop
+    LoopParty = LoopParty or (try and load(try.." return LoopParty(...)")) or _M_.LoopParty
 end 
 
 
@@ -613,7 +613,7 @@ if GetCurrentResourceName() == "nb-keyevent" then
             end 
             RegisterKeyMapping = function(name,desc,group,key)
                 if type(group) == "number" and type(key) == "number" then 
-                if not KeyCheckLoop then KeyCheckLoop = PepareLoop(0) end 
+                if not KeyCheckLoop then KeyCheckLoop = LoopParty(0) end 
                 KeyCheckLoop(function()
                     if string.sub(name,1,1) == "+" then 
                         if IsControlJustPressed(group,key) then 
@@ -760,7 +760,7 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             checkduration = duration or checkduration
             checkdelay = delay or checkdelay
             isdynamic = dynamic or isdynamic
-            if not holdingloop then holdingloop = PepareLoop(checkduration) 
+            if not holdingloop then holdingloop = LoopParty(checkduration) 
                 holdingloop(function(duration)
                     
                     if holdingloop and isholding then
