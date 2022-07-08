@@ -1,12 +1,12 @@
 local _M_ = {}
 do 
 
-    local TotalThread = 0
-    local DebugMode = false
+    local totalThread = 0
+    local debugMode = false
     local e = {} setmetatable(e,{__call = function(t,...) end})
-    local NewLoopThread = function(t,k)  
+    local newLoopThread = function(t,k)  
         CreateThread(function()
-            TotalThread = TotalThread + 1
+            totalThread = totalThread + 1
             local o = t[k]
             repeat 
                 local tasks = (o or e)
@@ -19,7 +19,7 @@ do
                 end 
             until n == 0 or Wait(k) 
             ::end_loop::
-            TotalThread = TotalThread - 1
+            totalThread = totalThread - 1
             t[k] = nil
 
             return 
@@ -28,10 +28,10 @@ do
 
     local Loops = setmetatable({[e]=e}, {__newindex = function(t, k, v)
         rawset(t, k, v)
-        NewLoopThread(t, k)
+        newLoopThread(t, k)
     end})
 
-    local NewLoopObject = function(t,selff,f)
+    local newLoopObject = function(t,selff,f)
         local fns = t.fns
         local fnsbreak = t.fnsbreak
         local f = f 
@@ -60,18 +60,18 @@ do
                 return t.duration
             end 
         end
-        local alivedelay = nil 
+        local aliveDelay = nil 
         return function(action,...)
             if not action then
-                if alivedelay and GetGameTimer() < alivedelay then 
-                    return e
+                if aliveDelay and GetGameTimer() < aliveDelay then 
+                    return e()
                 else 
-                    alivedelay = nil 
+                    aliveDelay = nil 
                     return selff(ref)
                 end
             elseif action == "setalivedelay" then 
                 local delay = ...
-                alivedelay = GetGameTimer() + delay
+                aliveDelay = GetGameTimer() + delay
             else 
                 ref(action,...)
             end
@@ -109,7 +109,7 @@ do
                 local fbreak = ...
                 table.insert(t.fns, f)
                 if fbreak then table.insert(self.fnsbreak, fbreak) end
-                local obj = NewLoopObject(self,selff,f)
+                local obj = newLoopObject(self,selff,f)
                 table.insert(Loops[duration], obj)
                 self.obj = obj
                 return self
@@ -117,7 +117,7 @@ do
                 return self.obj(f,...)
             end 
         end,__tostring = function(t)
-            return "Loop("..t.duration.."), Total Thread: "..TotalThread
+            return "Loop("..t.duration.."), Total Thread: "..totalThread
         end})
         self.found = function(self,f)
             for i,v in ipairs(Loops[self.duration]) do
@@ -151,14 +151,14 @@ do
                                     table.remove(Loops[duration],i)
                                 end
                                 if cb then cb() end
-                            elseif DebugMode then  
+                            elseif debugMode then  
                                 error("It should be deleted")
                             end 
                             
-                        elseif DebugMode then  
+                        elseif debugMode then  
                             error('Task deleteing not found',2)
                         end
-                    elseif DebugMode then  
+                    elseif debugMode then  
                         error('Task deleteing not found',2)
                     end 
                 end 
@@ -190,7 +190,7 @@ end
 
 
 
-PepareLoop = PepareLoop
+local PepareLoop = PepareLoop
 if not PepareLoop then 
     local try = LoadResourceFile("nb-libs","shared/loop.lua") or LoadResourceFile("nb-loop","nb-loop.lua")
     PepareLoop = PepareLoop or (try and load(try.." return PepareLoop(...)")) or _M_.PepareLoop
