@@ -718,7 +718,6 @@ local BeginKeyBindMethod = function(keygroup,key,description)
     
     local checkdelay = 250
     local checkduration = 50
-    local isdynamic = false
     local dynamiclevel = 1
     local isholding = false 
     local ispressed = false
@@ -761,29 +760,42 @@ local BeginKeyBindMethod = function(keygroup,key,description)
             isholding = true 
             checkduration = duration or checkduration
             checkdelay = delay or checkdelay
-            isdynamic = dynamic or isdynamic
+            local dynamic = dynamic and type(dynamic) == "boolean" and 5 or dynamic
             if not holdingloop then holdingloop = LoopParty(checkduration) 
                 holdingloop(function(duration)
                     
                     if holdingloop and isholding then
                         local diff = GetGameTimer() - lastpressedtime 
-                        if ispressed and diff > checkdelay then 
-                            local onpressingtasks = obj("getonfns")[Flags[3]]
-                            local n = #onpressingtasks
-                            if n == 0 then duration("kill") end 
-                            for i=1,n do
-                                onpressingtasks[i]()
-                            end
-                            if isdynamic then
-                                if dynamiclevel < 5 then
-                                    if diff > checkdelay * dynamiclevel then
-                                        dynamiclevel = dynamiclevel + 1
+                        if ispressed  then 
+                            if diff > checkdelay then 
+                                local onpressingtasks = obj("getonfns")[Flags[3]]
+                                local n = #onpressingtasks
+                                if n == 0 then duration("kill") end 
+                                
+                                if dynamic then
+                                    for i=1,n do
+                                        onpressingtasks[i](dynamiclevel)
+                                        
+                                    end
+                                    if dynamiclevel < dynamic then
+                                        if diff > checkdelay * dynamiclevel then
+                                            dynamiclevel = dynamiclevel + 1
+                                        end
+                                    end
+                                    duration("set",checkduration/dynamiclevel)
+                                else 
+                                    for i=1,n do
+                                        onpressingtasks[i]()
+                                        
                                     end
                                 end
-                                duration("set",checkduration/dynamiclevel)
-                            end
+                            end 
+                        else 
+                            dynamiclevel = 1
+                            duration("set",checkdelay)
                         end 
                     else 
+                        
                         isholding = false 
                         checkduration = 50
                         checkdelay = 250
@@ -898,6 +910,19 @@ KeyEvent = function(keygroup, key, cb)
         table.insert(inputs[type],{...})
     end
     if cb then cb(inserter) end
+    local found = false 
+    for i,v in pairs(inputs) do 
+        if string.find(i:lower(),"justpress") then 
+            
+        elseif string.find(i:lower(),"release") then
+            
+        elseif string.len(i) > 0 then
+            found = true
+        end 
+    end 
+    if found then 
+        inserter("onreleased",function() end)
+    end 
     for k,v in pairs(inputs) do
         for i=1,#v do
             key.bindadd(k,unpack(v[i]))
